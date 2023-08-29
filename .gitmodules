@@ -1,3 +1,27 @@
 [submodule "RL_2023_Learn_to_walk"]
 	path = RL_2023_Learn_to_walk
 	url = https://github.com/ngolisa/RL_2023_Learn_to_walk.git
+
+[submodule "Autonomous-ai"]
+  path = Autonomous-ai
+  url = https://github.com/Samuel151202/Autonomous-ai.git
+
+[submodule "buildingAI"]
+  path = buildingAI
+  url = https://github.com/simong33/buildingAI.git
+
+[submodule "RSNA"]
+  path = RSNA
+  url = https://github.com/LaetLanf/RSNA.git
+
+[submodule "SDGs-Classifier"]
+  path = SDGs-Classifier
+  url = https://github.com/Erwan-Jn/SDGs-Classifier.git
+
+[submodule "text_to_speech"]
+  path = text_to_speech
+  url = https://github.com/Alexandre-Selier-32/text_to_speech.git
+
+[submodule "BERT_project"]
+  path = BERT_project
+  url = https://github.com/paulbtl/BERT_project.git
