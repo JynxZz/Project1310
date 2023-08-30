@@ -114,7 +114,8 @@ n_actions = env.action_space.shape[0]
 
 # Get the state of obs
 state, info = env.reset()
-n_obs = len(state)
+# n_obs = len(state)
+n_obs = env.observation_space.shape[0]
 
 
 # Set DQN policy, DQN target, optimizer & memory, nb of generations
@@ -143,11 +144,12 @@ def select_action(state):
 
     if sample > epsilon_threshold:
         with torch.no_grad():
-            return policy_net(state).max(1)[1].view(1, 1)
+            return policy_net(torch.tensor(state, dtype=torch.float32))
     else:
-        return torch.tensor(
-            [[env.action_space.sample()]], device=device, dtype=torch.long
-        )
+        return env.action_space.sample()
+        # return torch.tensor(
+        #     env.action_space.sample(), device=device, dtype=torch.float32
+        # )
 
 
 # Method to optimize model
@@ -163,23 +165,25 @@ def optimize_model():
         tuple(map(lambda x: x is not None, batch.next_state)),
         device=device,
         dtype=torch.bool,
-    )
-    non_final_next_state = torch.cat([x for x in batch.next_state if x is not None])
+    ).unsqueeze(1)
 
-    state_batch = torch.cat(batch.state)
-    action_batch = torch.cat(batch.action)
-    reward_batch = torch.cat(batch.reward)
+    non_final_next_state = torch.tensor(batch.next_state)
 
-    # Compute Q(s_t, a)
-    state_action_values = policy_net(state_batch).gather(1, action_batch)
+    state_batch = torch.tensor(batch.state)
+    #action_batch = torch.tensor(batch.action)
+    reward_batch = torch.tensor(batch.reward)
+    #print(reward_batch.shape)
 
+    print('b')# Compute Q(s_t, a)
+    state_action_values = policy_net(state_batch)
+    print('a')
     # Compute V(s{t+1}) for all next states
     next_state_values = torch.zeros(CFG.BATCH_SIZE, device=device)
     with torch.no_grad():
-        next_state_values[non_final_mask] = target_net(non_final_next_state).max(1)[0]
+        next_state_values = target_net(non_final_next_state)#*(1-non_final_mask)
 
     # Compute the expected Q values
-    expected_state_action_values = (next_state_values * CFG.GAMMA) + reward_batch
+    expected_state_action_values = (next_state_values * CFG.GAMMA) + reward_batch.unsqueeze(1)
 
     # Compute HuberLoss
     criterion = nn.SmoothL1Loss()
@@ -249,27 +253,28 @@ def main_loop(path= None, gen= None, new_model = True):
     else:
         for i_gen in range(n_gens):
             state, info = env.reset()
-            state = torch.tensor(state, dtype=torch.float32, device=device).unsqueeze(0)
+            state = state
 
             for t in count():
                 action = select_action(state=state)
-                obs, reward, terminated, truncated, _ = env.step(action.item())
+
+                obs, reward, terminated, truncated, _ = env.step(action)
 
                 reward = torch.tensor([reward], device=device)
                 done = terminated or truncated
 
-                if terminated:
-                    next_state = None
-                else:
-                    next_state = torch.tensor(
-                        obs, dtype=torch.float32, device=device
-                    ).unsqueeze(0)
+                # if terminated:
+                #     next_state = None
+                # else:
+                #     next_state = torch.tensor(
+                #         obs, dtype=torch.float32, device=device
+                #     )
 
                 # Store transition in mem
-                memory.push(state, action, next_state, reward)
+                memory.push(state, action, obs, reward)
 
                 # Move to next state
-                state = next_state
+                state = obs
 
                 optimize_model()
 
