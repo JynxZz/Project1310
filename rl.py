@@ -21,7 +21,8 @@ if is_python:
     from IPython import display
 
 # Setup Env
-env = gym.make("LunarLander-v2", render_mode="human")
+# env = gym.make("LunarLander-v2", render_mode="human")
+env = gym.make("BipedalWalker-v3", hardcore=True, render_mode="human")
 
 # Setup GPU or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -108,7 +109,8 @@ class Timer():
 
 
 # Get actions space
-n_actions = env.action_space.n
+# n_actions = env.action_space.n
+n_actions = env.action_space.shape[0]
 
 # Get the state of obs
 state, info = env.reset()
