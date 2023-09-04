@@ -22,7 +22,7 @@ if is_python:
 
 # Setup Env
 # env = gym.make("LunarLander-v2", render_mode="human")
-env = gym.make("BipedalWalker-v3", hardcore=True, render_mode="human")
+env = gym.make("BipedalWalker-v3", hardcore=True, render_mode=None)
 
 # Setup GPU or CPU
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -56,16 +56,21 @@ class DQN(nn.Module):
         # Hidden
         self.hidden_layer_1 = nn.Linear(128, 128)
         self.hidden_layer_2 = nn.Linear(128, 128)
+        self.hidden_layer_3 = nn.Linear(128, 128)
+        self.hidden_layer_4 = nn.Linear(128, 128)
 
         # Output
         self.output_layer = nn.Linear(128, n_actions)
 
     def forward(self, x):
         x = F.relu(self.input_layer(x))
+
         x = F.relu(self.hidden_layer_1(x))
         x = F.relu(self.hidden_layer_2(x))
+        x = F.relu(self.hidden_layer_3(x))
+        x = F.relu(self.hidden_layer_4(x))
 
-        return self.output_layer(x)
+        return F.tanh(self.output_layer(x))
 
 # Config class
 class Configuration:
@@ -77,7 +82,7 @@ class Configuration:
         self.EPS_DECAY = 1000  # rate of expo decay for the epsilon
         self.TAU = 0.005  # update rate for the target
         self.LR = 1e-4  # learning rate for optimizer
-        self.AMSGRAD = True  # stochastic optimisation ofr the optimizer
+        self.AMSGRAD = False  # stochastic optimisation ofr the optimizer
         self.PATH = "model_lunar_gen_{}.pt"
 
 
@@ -170,17 +175,17 @@ def optimize_model():
     non_final_next_state = torch.tensor(batch.next_state)
 
     state_batch = torch.tensor(batch.state)
-    #action_batch = torch.tensor(batch.action)
+    # action_batch = torch.tensor(batch.action)
     reward_batch = torch.tensor(batch.reward)
     #print(reward_batch.shape)
 
-    print('b')# Compute Q(s_t, a)
+    # Compute Q(s_t, a)
     state_action_values = policy_net(state_batch)
-    print('a')
+
     # Compute V(s{t+1}) for all next states
     next_state_values = torch.zeros(CFG.BATCH_SIZE, device=device)
     with torch.no_grad():
-        next_state_values = target_net(non_final_next_state)#*(1-non_final_mask)
+        next_state_values = target_net(non_final_next_state)* (~(non_final_mask))
 
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * CFG.GAMMA) + reward_batch.unsqueeze(1)
@@ -201,7 +206,7 @@ def optimize_model():
 gen_durations = []
 
 
-def plot_durations(show_result=False):
+def plot_durations(show_result=True):
     plt.figure(1)
     durations_t = torch.tensor(gen_durations, dtype=torch.float)
 
@@ -239,9 +244,9 @@ def load_model(path, gen):
 
 def main_loop(path= None, gen= None, new_model = True):
     if torch.cuda.is_available():
-        n_gens = 1_000
+        n_gens = 10_000
     else:
-        n_gens = 100
+        n_gens = 1000
     print(f"Setup Env with {n_gens} episodes \n Ready to train ... ")
 
     # Setup Timer
@@ -306,3 +311,4 @@ def main_loop(path= None, gen= None, new_model = True):
 
 if __name__ == "__main__":
     main_loop()
+    
